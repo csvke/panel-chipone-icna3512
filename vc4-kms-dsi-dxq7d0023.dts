@@ -1,0 +1,40 @@
+/dts-v1/;
+
+/ {
+  compatible = "raspberrypi,4-model-b", "brcm,bcm2711";
+
+  display-subsystem {
+    compatible = "raspberrypi,display-subsystem";
+    route {
+      route-dsi0 {
+        status = "okay";
+      };
+    };
+  };
+
+  dsi {
+    status = "okay";
+    panel {
+      compatible = "dxq7d0023,amoled-panel";
+      status = "okay";
+
+      dsi,format = <0>;
+      dsi,lanes = <4>;
+      reset-delay-ms = <120>;
+      init-delay-ms = <120>;
+      enable-delay-ms = <120>;
+      prepare-delay-ms = <120>;
+      unprepare-delay-ms = <20>;
+
+      dsi,flags = <0xA03>;
+
+      panel-init-sequence = [
+        0x05 0x11, // Command to exit sleep mode
+        0x78,      // Delay 120ms
+        0x05 0x29, // Command to turn on display
+        0x78,      // Delay 120ms
+        // Add more commands as needed
+      ];
+    };
+  };
+};
