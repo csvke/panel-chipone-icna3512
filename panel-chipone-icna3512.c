@@ -3,10 +3,12 @@
  * Copyright (c) 2019 Radxa Limited
  * Copyright (c) 2022 Edgeble AI Technologies Pvt. Ltd.
  *
+ * this file is based on panel-jadard-jd9365da-h3.c
  * Author:
  * - Jagan Teki <jagan@amarulasolutions.com>
  * - Stephen Chen <stephen@radxa.com>
- */
+ * - csvke: Frankie Yuen <frankie.yuen@me.com>
+  */
 
 #include <drm/drm_mipi_dsi.h>
 #include <drm/drm_modes.h>
@@ -97,6 +99,7 @@ static int icna3512_disable(struct drm_panel *panel)
     return 0;
 }
 
+// csvke: relevant info is in icna3512 datasheet p.29
 static int icna3512_prepare(struct drm_panel *panel)
 {
     struct icna3512 *icna3512 = panel_to_icna3512(panel);
@@ -120,6 +123,9 @@ static int icna3512_prepare(struct drm_panel *panel)
     msleep(120);
 
     return 0;
+
+    //csvke: to debug if icna3512_prepare is successful
+
 }
 
 static int icna3512_unprepare(struct drm_panel *panel)
