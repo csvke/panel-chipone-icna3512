@@ -40,8 +40,8 @@ struct icna3512 {
     struct mipi_dsi_device *dsi;
     const struct icna3512_panel_desc *desc;
 
-    struct regulator *vdd;
-    struct regulator *vccio;
+    struct regulator *vddi; //csvke: VDDI is the power supply to I/O for the panel, ICNA3512 datasheet page 13
+    struct regulator *vci; // csvke: VCI is the power supply to analog power for the DDIC use, ICNA3512 datasheet page 13
     struct gpio_desc *reset;
 };
 
@@ -105,11 +105,11 @@ static int icna3512_prepare(struct drm_panel *panel)
     struct icna3512 *icna3512 = panel_to_icna3512(panel);
     int ret;
 
-    ret = regulator_enable(icna3512->vccio);
+    ret = regulator_enable(icna3512->vci);
     if (ret)
         return ret;
 
-    ret = regulator_enable(icna3512->vdd);
+    ret = regulator_enable(icna3512->vddi);
     if (ret)
         return ret;
 
@@ -135,8 +135,8 @@ static int icna3512_unprepare(struct drm_panel *panel)
     gpiod_set_value(icna3512->reset, 1);
     msleep(120);
 
-    regulator_disable(icna3512->vdd);
-    regulator_disable(icna3512->vccio);
+    regulator_disable(icna3512->vddi);
+    regulator_disable(icna3512->vci);
 
     return 0;
 }
@@ -278,16 +278,16 @@ static int icna3512_dsi_probe(struct mipi_dsi_device *dsi)
         return PTR_ERR(icna3512->reset);
     }
 
-    icna3512->vdd = devm_regulator_get(dev, "vdd");
-    if (IS_ERR(icna3512->vdd)) {
-        DRM_DEV_ERROR(&dsi->dev, "failed to get vdd regulator\n");
-        return PTR_ERR(icna3512->vdd);
+    icna3512->vddi = devm_regulator_get(dev, "vddi");
+    if (IS_ERR(icna3512->vddi)) {
+        DRM_DEV_ERROR(&dsi->dev, "failed to get vddi regulator\n");
+        return PTR_ERR(icna3512->vddi);
     }
 
-    icna3512->vccio = devm_regulator_get(dev, "vccio");
-    if (IS_ERR(icna3512->vccio)) {
-        DRM_DEV_ERROR(&dsi->dev, "failed to get vccio regulator\n");
-        return PTR_ERR(icna3512->vccio);
+    icna3512->vci = devm_regulator_get(dev, "vci");
+    if (IS_ERR(icna3512->vci)) {
+        DRM_DEV_ERROR(&dsi->dev, "failed to get vci regulator\n");
+        return PTR_ERR(icna3512->vci);
     }
 
     drm_panel_init(&icna3512->panel, dev, &icna3512_funcs,

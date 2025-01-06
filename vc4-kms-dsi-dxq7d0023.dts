@@ -1,51 +1,55 @@
-/ {
-  compatible = "brcm,bcm2712"; // RPi5 = "brcm,bcm2712"
+/dts-v1/;
+/plugin/;
 
-  fragment@0 {
-    target = <&dsi0>;
+fragment@0 {
+    target = <&dsi0>; // csvke: check if the panel is connected to dsi0 (CAM/DISP 0)
     __overlay__ {
-      status = "okay";
-      #address-cells= <1>;
-      #size-cells = <0>;
-      port {
-        dsi_out_port: endpoint {
-          remote-endpoint = <&panel_dsi_port>;
-        };
-      };
-      dxq7d0023: dxq7d0023@0 {
-        compatible = "dxq,dxq7d0023";  //csvke: reference the correct compatible string from panel-chipone-icna3512.c of_device_id icna3512_of_match[]
         status = "okay";
-        reg = <0>;
-        reset = <&gpio 16 0>; // csvke: Adjust GPIO pin as needed, // cskve, pin 28 on fpc breakout board on orange dupont wire
-        // backlight = <&backlight>; csvke: WIP: Have not worked out on how to control backlight or if AMOLED control brightness that way
-        vdd-supply = <&vdd_reg>; // csvke: reference as VBAT in DXQ7D0023 datasheet, and more info in ICNA3512 datasheet page 13
-        vccio-supply = <&vccio_reg>; // csvke: reference as VDDIO in DXQ7D0023 datasheet, and more info in ICNA3512 datasheet page 13
+        #address-cells= <1>;
+        #size-cells = <0>;
         port {
-          panel_dsi_port: endpoint {
-            remote-endpoint = <&dsi_out_port>;
-          };
+            dsi_out_port: endpoint {
+                remote-endpoint = <&panel_dsi_port>;
+            };
         };
-      };
+        dxq7d0023: dxq7d0023@0 {
+            compatible = "dxq,dxq7d0023";  //csvke: reference the correct compatible string from panel-chipone-icna3512.c of_device_id icna3512_of_match[]
+            status = "okay";
+            reg = <0>;
+            reset = <&gpio 16 0>; // csvke: Adjust GPIO pin as needed, // cskve, pin 28 on fpc breakout board on orange dupont wire
+            // backlight = <&backlight>; csvke: WIP: Have not worked out on how to control backlight or if AMOLED control brightness that way
+            vddi = <&vddi_reg>; // csvke: reference as VBAT in DXQ7D0023 datasheet, and more info in ICNA3512 datasheet page 13
+            vci = <&vci_reg>; // csvke: reference as VDDIO in DXQ7D0023 datasheet, and more info in ICNA3512 datasheet page 13
+            port {
+                panel_dsi_port: endpoint {
+                    remote-endpoint = <&dsi_out_port>;
+                };
+            };
+        };
     };
-  };
+};
 
-  regulators {
-    vdd_reg: vdd {
-      compatible = "regulator-fixed";
-      regulator-name = "vdd";
-      regulator-min-microvolt = <3300000>;
-      regulator-max-microvolt = <3300000>;
-      gpio = <&gpio 24 GPIO_ACTIVE_HIGH>;
-      enable-active-high;
-    };
+fragment@1 {
+    target-path = "/";
+    __overlay__ {
+        regulators {
+            vddi_reg: vddi {
+                compatible = "regulator-fixed";
+                regulator-name = "vddi_reg";
+                regulator-min-microvolt = <1800000>; //csvke: somehow DXQ manufacturer provided HDMI driver board is 3.3v, but the datasheet says 1.8v
+                regulator-max-microvolt = <1800000>;
+                gpio = <&gpio 24 1>; // csvke: WIP: Adjust GPIO pin as needed
+                enable-active-high;
+            };
 
-    vccio_reg: vccio {
-      compatible = "regulator-fixed";
-      regulator-name = "vccio";
-      regulator-min-microvolt = <1800000>;
-      regulator-max-microvolt = <1800000>;
-      gpio = <&gpio 25 GPIO_ACTIVE_HIGH>;
-      enable-active-high;
+            vci_reg: vci {
+                compatible = "regulator-fixed";
+                regulator-name = "vci_reg";
+                regulator-min-microvolt = <3300000>; 
+                regulator-max-microvolt = <3300000>;
+                gpio = <&gpio 25 1>; // csvke: WIP: Adjust GPIO pin as needed
+                enable-active-high;
+            };
+        };
     };
-  };
 };
