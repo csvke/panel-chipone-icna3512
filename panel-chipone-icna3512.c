@@ -59,14 +59,29 @@ static int icna3512_enable(struct drm_panel *panel)
     unsigned int i;
     int err;
 
+    // csvke: to debug if icna3512_enable is called
+    dev_info(dev, "icna3512_enable called\n");
+
     msleep(10);
+
+    // csvke: debug: explicitly set mode_flags to MIPI_DSI_MODE_LPM
+    dsi->mode_flags |= MIPI_DSI_MODE_LPM;
 
     for (i = 0; i < desc->num_init_cmds; i++) {
         const struct icna3512_init_cmd *cmd = &desc->init_cmds[i];
 
+        // csvke: to debug if init_cmds are sent
+        dev_info(dev, "Sending init command %d: 0x%02x 0x%02x\n", i, cmd->data[0], cmd->data[1]);
+
         err = mipi_dsi_dcs_write_buffer(dsi, cmd->data, ICNA3512_INIT_CMD_LEN);
-        if (err < 0)
+        if (err < 0) {
+            // csvke: to debug if mipi_dsi_dcs_write_buffer fails
+            dev_err(dev, "Failed to write DCS buffer: %d\n", err);
             return err;
+        }
+        
+        // csvke: to debug if init_cmds are sent
+        dev_info(dev, "Init command %d sent successfully\n", i);
     }
 
     msleep(120);
@@ -88,6 +103,9 @@ static int icna3512_disable(struct drm_panel *panel)
     struct icna3512 *icna3512 = panel_to_icna3512(panel);
     int ret;
 
+    // csvke: to debug if icna3512_disable is called
+    dev_info(dev, "icna3512_disable called\n");
+
     ret = mipi_dsi_dcs_set_display_off(icna3512->dsi);
     if (ret < 0)
         DRM_DEV_ERROR(dev, "failed to set display off: %d\n", ret);
@@ -105,32 +123,66 @@ static int icna3512_prepare(struct drm_panel *panel)
     struct icna3512 *icna3512 = panel_to_icna3512(panel);
     int ret;
 
+    // csvke: to debug if icna3512_prepare is called
+    dev_info(panel->dev, "icna3512_prepare called\n");
+
     ret = regulator_enable(icna3512->vci);
-    if (ret)
+    if (ret) {
+        // csvke: to debug if regulator_enable fails
+        dev_err(panel->dev, "Failed to enable vci regulator: %d\n", ret);
         return ret;
+    }
 
     ret = regulator_enable(icna3512->vddi);
-    if (ret)
+    if (ret) {
+        // csvke: to debug if regulator_enable fails
+        dev_err(panel->dev, "Failed to enable vddi regulator: %d\n", ret);
         return ret;
+    }
 
+    // Trigger the reset pin
+    // csvke: to debug if reset GPIO is set
+    // ***** Original code ***** //
+    dev_info(panel->dev, "Setting reset GPIO high for 5ms\n");
     gpiod_set_value(icna3512->reset, 1);
-    msleep(5);
+    usleep_range(5000, 6000); // Sleep for 5ms with a range to account for scheduling delays
 
+    dev_info(panel->dev, "Setting reset GPIO low for 20ms\n");
     gpiod_set_value(icna3512->reset, 0);
-    msleep(10);
+    usleep_range(20000, 21000); // Sleep for 20ms with a range to account for scheduling delays
 
+    // Pull high after 20ms low
+    dev_info(panel->dev, "Setting reset GPIO high again\n");
     gpiod_set_value(icna3512->reset, 1);
-    msleep(120);
+
+    // csvke: to debug if reset GPIO is set
+    // dev_info(panel->dev, "Setting reset GPIO high and sleep 10ms\n");
+    // gpiod_set_value(icna3512->reset, 1);
+    // msleep(120);
+    // ***** Original code ***** //
+
+    // // ***** Co-pilot suggested code ***** //
+    // // Assert reset pin
+    // gpiod_set_value(icna3512->reset, 1);
+    // msleep(120); // Wait for the maximum blanking sequence time
+
+    // // De-assert reset pin
+    // gpiod_set_value(icna3512->reset, 0);
+    // usleep_range(5000, 6000); // Wait for the reset complete time (5ms)
+
+    // if (ret < 0)
+    //     return ret;
+    // // ***** Co-pilot suggested code ***** //
 
     return 0;
-
-    //csvke: to debug if icna3512_prepare is successful
-
 }
 
 static int icna3512_unprepare(struct drm_panel *panel)
 {
     struct icna3512 *icna3512 = panel_to_icna3512(panel);
+
+    // csvke: to debug if icna3512_unprepare is called
+    dev_info(panel->dev, "icna3512_unprepare called\n");
 
     gpiod_set_value(icna3512->reset, 1);
     msleep(120);
@@ -141,12 +193,14 @@ static int icna3512_unprepare(struct drm_panel *panel)
     return 0;
 }
 
-static int icna3512_get_modes(struct drm_panel *panel,
-                struct drm_connector *connector)
+static int icna3512_get_modes(struct drm_panel *panel, struct drm_connector *connector)
 {
     struct icna3512 *icna3512 = panel_to_icna3512(panel);
     const struct drm_display_mode *desc_mode = &icna3512->desc->mode;
     struct drm_display_mode *mode;
+    
+    // csvke: to debug if icna3512_get_modes is called 
+    dev_info(panel->dev, "icna3512_get_modes called\n");
 
     mode = drm_mode_duplicate(connector->dev, desc_mode);
     if (!mode) {
@@ -159,8 +213,12 @@ static int icna3512_get_modes(struct drm_panel *panel,
     drm_mode_set_name(mode);
     drm_mode_probed_add(connector, mode);
 
+    dev_info(panel->dev, "Mode added: %ux%u@%u\n", mode->hdisplay, mode->vdisplay, drm_mode_vrefresh(mode));
+
     connector->display_info.width_mm = mode->width_mm;
     connector->display_info.height_mm = mode->height_mm;
+
+    dev_info(panel->dev, "Display info set: width_mm=%d, height_mm=%d\n", connector->display_info.width_mm, connector->display_info.height_mm);
 
     return 1;
 }
@@ -175,58 +233,76 @@ static const struct drm_panel_funcs icna3512_funcs = {
 
 // csvke: dxq7d0023 init_cmds based on panel-init-sequence of rk3288_mipi_7D0_amoled.dts given by vendor
 // csvke: DCS Write command info: https://forum.armsom.org/t/rk3588-mipi-display-debugging-rk3588-mipi-dsi-lcd-power-up-initialization-sequence/147
+// csvke: mipi cheat sheet https://www.cnblogs.com/yusisc/p/17178140.html
 // WIP: csvke: need to verify the correctness of the init_cmds as vendor provided multiple init_cmds
+// static const struct icna3512_init_cmd dxq7d0023_init_cmds[] = {
+//     { .data = { 0x39, 0x00 } },
+//     { .data = { 0x03, 0x9C } },
+//     { .data = { 0xA5, 0xA5 } },
+//     { .data = { 0x39, 0x00 } },
+//     { .data = { 0x03, 0xFD } },
+//     { .data = { 0x5A, 0x5A } },
+//     { .data = { 0x15, 0x00 } },
+//     { .data = { 0x02, 0x48 } },
+//     { .data = { 0x03, 0x15 } },
+//     { .data = { 0x00, 0x02 } },
+//     { .data = { 0x53, 0xE0 } },
+//     { .data = { 0x39, 0x00 } },
+//     { .data = { 0x03, 0x51 } },
+//     { .data = { 0x00, 0x00 } },
+//     { .data = { 0x15, 0x00 } },
+//     { .data = { 0x02, 0x35 } },
+//     { .data = { 0x00, 0x05 } },
+//     { .data = { 0xFF, 0x01 } },
+//     { .data = { 0x11, 0x39 } },
+//     { .data = { 0x00, 0x03 } },
+//     { .data = { 0x51, 0x05 } },
+//     { .data = { 0x55, 0x15 } },
+//     { .data = { 0x00, 0x02 } },
+//     { .data = { 0x9F, 0x0F } },
+//     { .data = { 0x15, 0x00 } },
+//     { .data = { 0x02, 0xCE } },
+//     { .data = { 0x22, 0x15 } },
+//     { .data = { 0x00, 0x02 } },
+//     { .data = { 0x9F, 0x01 } },
+//     { .data = { 0x15, 0x00 } },
+//     { .data = { 0x02, 0xC5 } },
+//     { .data = { 0x01, 0x05 } },
+//     { .data = { 0xFF, 0x01 } },
+//     { .data = { 0x29 } },
+// };
+
+// csvke: based on datasheet of dxq7d0023 and manufacturer provided .txt file
 static const struct icna3512_init_cmd dxq7d0023_init_cmds[] = {
-    // 9C,A5,A5
     { .data = { 0x39, 0x00 } },
     { .data = { 0x03, 0x9C } },
     { .data = { 0xA5, 0xA5 } },
-
-    //FD,5A,5A
     { .data = { 0x39, 0x00 } },
     { .data = { 0x03, 0xFD } },
     { .data = { 0x5A, 0x5A } },
-    
-    //48,03
-    //53,E0
     { .data = { 0x15, 0x00 } },
     { .data = { 0x02, 0x48 } },
     { .data = { 0x03, 0x15 } },
     { .data = { 0x00, 0x02 } },
     { .data = { 0x53, 0xE0 } },
-    
-    //51,00,00
     { .data = { 0x39, 0x00 } },
     { .data = { 0x03, 0x51 } },
     { .data = { 0x00, 0x00 } },
-    
-    //
+    { .data = { 0x05, 0x00 } },
+    { .data = { 0x01, 0x35 } },
+    { .data = { 0x05, 0x00 } },
+    { .data = { 0x01, 0x11 } },
+    { .data = { 0xFF, 0x78 } }, // delay 120ms
+    { .data = { 0x39, 0x00 } },
+    { .data = { 0x03, 0x51 } },
+    { .data = { 0x0D, 0xBB } },
     { .data = { 0x15, 0x00 } },
-    { .data = { 0x02, 0x35 } },
-    
-    { .data = { 0x00, 0x05 } },
-    { .data = { 0xFF, 0x01 } },
-    { .data = { 0x11, 0x39 } }, //
-    { .data = { 0x00, 0x03 } },
-    { .data = { 0x51, 0x05 } },
-    { .data = { 0x55, 0x15 } },
+    { .data = { 0x02, 0x9F } },
+    { .data = { 0x0F, 0x15 } },
     { .data = { 0x00, 0x02 } },
-    { .data = { 0x9F, 0x0F } },
-    { .data = { 0x15, 0x00 } },
-    { .data = { 0x02, 0xCE } },
-    { .data = { 0x22, 0x15 } },
-    { .data = { 0x00, 0x02 } },
-    { .data = { 0x9F, 0x01 } },
-    { .data = { 0x15, 0x00 } },
-    { .data = { 0x02, 0xC5 } },
-    { .data = { 0x01, 0x05 } },
-    { .data = { 0xFF, 0x01 } },
-
-    { .data = { 0x29, 0x39 } }, // csvke: likely to be the start of Auto BIST (Built-In Self-Test) from rk3288_mipi_7D0_amoled.dts 39 00 05 d6 01 00 1F 01   //auto BIST
-    { .data = { 0x00, 0x05 } },
-    { .data = { 0xD6, 0x01 } },
-    { .data = { 0x00, 0x1F } },
-    { .data = { 0x01, 0x00 } },
+    { .data = { 0xCE, 0x22 } },
+    { .data = { 0x05, 0x00 } },
+    { .data = { 0x01, 0x29 } },  
 };
 
 // csvke: based on datasheet of dxq7d0023 
@@ -267,8 +343,7 @@ static int icna3512_dsi_probe(struct mipi_dsi_device *dsi)
         return -ENOMEM;
 
     desc = of_device_get_match_data(dev);
-    dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST |
-              MIPI_DSI_MODE_NO_EOT_PACKET;
+    dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_NO_EOT_PACKET | MIPI_DSI_MODE_LPM;
     dsi->format = desc->format;
     dsi->lanes = desc->lanes;
 
@@ -293,9 +368,10 @@ static int icna3512_dsi_probe(struct mipi_dsi_device *dsi)
     drm_panel_init(&icna3512->panel, dev, &icna3512_funcs,
                DRM_MODE_CONNECTOR_DSI);
 
-    ret = drm_panel_of_backlight(&icna3512->panel);
-    if (ret)
-        return ret;
+    // WIP: csvke: amoled has no backlight, need to implement brightness control in other way, see chipone icna3512 datasheet p.169
+    // ret = drm_panel_of_backlight(&icna3512->panel);
+    // if (ret)
+    //     return ret;
 
     drm_panel_add(&icna3512->panel);
 
@@ -306,7 +382,6 @@ static int icna3512_dsi_probe(struct mipi_dsi_device *dsi)
     ret = mipi_dsi_attach(dsi);
     if (ret < 0)
         drm_panel_remove(&icna3512->panel);
-
     return ret;
 }
 
@@ -332,7 +407,7 @@ static struct mipi_dsi_driver icna3512_driver = {
     .probe = icna3512_dsi_probe,
     .remove = icna3512_dsi_remove,
     .driver = {
-        .name = "icna3512-dxq7d0023",
+        .name = "panel-chipone-icna3512",
         .of_match_table = icna3512_of_match,
     },
 };
