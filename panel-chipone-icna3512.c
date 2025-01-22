@@ -497,7 +497,6 @@ static struct mipi_dsi_driver icna3512_panel_driver = {
 };
 module_mipi_dsi_driver(icna3512_panel_driver);
 
-MODULE_AUTHOR("Sumit Semwal <sumit.semwal@linaro.org>");
-MODULE_AUTHOR("Vinay Simha BN <simhavcs@gmail.com>");
-MODULE_DESCRIPTION("icna3512 LT070ME05000 WUXGA");
+MODULE_AUTHOR("Frankie Yuen <frankie.yuen@me.com>");
+MODULE_DESCRIPTION("Chipone ICNA3512 AMOLED Display Driver IC");
 MODULE_LICENSE("GPL v2");
