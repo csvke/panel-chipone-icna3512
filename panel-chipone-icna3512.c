@@ -40,53 +40,60 @@ static inline struct icna3512_panel *to_icna3512_panel(struct drm_panel *panel)
 
 static int icna3512_panel_init(struct icna3512_panel *icna3512)
 {
-	struct mipi_dsi_device *dsi = icna3512->dsi;
-	struct device *dev = &icna3512->dsi->dev;
-	int ret;
+    struct mipi_dsi_device *dsi = icna3512->dsi;
+    struct device *dev = &icna3512->dsi->dev;
+    int ret;
 
-	dev_info(dev, "Sending initial code\n");
+    dev_info(dev, "Sending initial code\n");
 
     // Command 1
     u8 cmd1[] = {0xA5, 0xA5};
     ret = mipi_dsi_dcs_write(dsi, 0x9C, cmd1, sizeof(cmd1));
-    if (ret < 0)
+    if (ret < 0) {
         return ret;
+    }
 
     // Command 2
     u8 cmd2[] = {0x5A, 0x5A};
     ret = mipi_dsi_dcs_write(dsi, 0xFD, cmd2, sizeof(cmd2));
-    if (ret < 0)
+    if (ret < 0) {
         return ret;
+    }
 
     // Command 3
     u8 cmd3[] = {0x03};
     ret = mipi_dsi_dcs_write(dsi, 0x48, cmd3, sizeof(cmd3));
-    if (ret < 0)
+    if (ret < 0) {
         return ret;
+    }
 
     // Command 4
     u8 cmd4[] = {0x00};
     ret = mipi_dsi_dcs_write(dsi, 0x53, cmd4, sizeof(cmd4));
-    if (ret < 0)
+    if (ret < 0) {
         return ret;
+    }
 
     // Command 5
     u8 cmd5[] = {0x00, 0x00};
     ret = mipi_dsi_dcs_write(dsi, 0x51, cmd5, sizeof(cmd5));
-    if (ret < 0)
+    if (ret < 0) {
         return ret;
+    }
 
     // Command 6
     u8 cmd6[] = {0x35};
     ret = mipi_dsi_dcs_write(dsi, 0x35, cmd6, sizeof(cmd6));
-    if (ret < 0)
+    if (ret < 0) {
         return ret;
+    }
 
     // Command 7 - SLP OUT
     u8 cmd7[] = {0x11};
     ret = mipi_dsi_dcs_write(dsi, 0x11, cmd7, sizeof(cmd7));
-    if (ret < 0)
+    if (ret < 0) {
         return ret;
+    }
 
     // Delay 120ms
     msleep(120);
@@ -94,29 +101,52 @@ static int icna3512_panel_init(struct icna3512_panel *icna3512)
     // Command 8
     u8 cmd8[] = {0x0D, 0xBB};
     ret = mipi_dsi_dcs_write(dsi, 0x51, cmd8, sizeof(cmd8));
-    if (ret < 0)
+    if (ret < 0) {
         return ret;
+    }
 
     // Command 9
     u8 cmd9[] = {0x0F};
     ret = mipi_dsi_dcs_write(dsi, 0x9F, cmd9, sizeof(cmd9));
-    if (ret < 0)
+    if (ret < 0) {
         return ret;
+    }
 
     // Command 10
     u8 cmd10[] = {0x22};
     ret = mipi_dsi_dcs_write(dsi, 0xCE, cmd10, sizeof(cmd10));
-    if (ret < 0)
+    if (ret < 0) {
         return ret;
+    }
 
     // Command 11 - DISP ON
     u8 cmd11[] = {0x29};
     ret = mipi_dsi_dcs_write(dsi, 0x29, cmd11, sizeof(cmd11));
-    if (ret < 0)
+    if (ret < 0) {
         return ret;
+    }
 
     return 0;
 }
+
+// csvke: BIST, may not need in the end
+// static int icna3512_panel_bist_test(struct mipi_dsi_device *dsi)
+// {
+//     struct device *dev = &dsi->dev;
+//     int ret;
+
+//     // BIST Command
+//     u8 bist_cmd[] = {0x39, 0x00, 0x05, 0xD6, 0x01, 0x00, 0x1F, 0x01};
+//     dev_info(dev, "Sending BIST command 0x39 with data 0x00, 0x05, 0xD6, 0x01, 0x00, 0x1F, 0x01\n");
+//     ret = mipi_dsi_dcs_write(dsi, bist_cmd[0], &bist_cmd[1], sizeof(bist_cmd) - 1);
+//     if (ret < 0) {
+//         dev_err(dev, "Failed to send BIST command: %d\n", ret);
+//         return ret;
+//     }
+//     dev_info(dev, "BIST command sent successfully\n");
+
+//     return 0;
+// }
 
 static int icna3512_panel_on(struct icna3512_panel *icna3512)
 {
@@ -199,6 +229,10 @@ static int icna3512_panel_prepare(struct drm_panel *panel)
 	if (icna3512->prepared)
 		return 0;
 
+    // csvke: Set the prepare_prev_first flag to ensure DSI interface is in LP-11 mode, https://forums.raspberrypi.com/viewtopic.php?p=2276942&hilit=LP+11#p2276316
+    icna3512->base.prepare_prev_first = true;
+    dev_info(dev, "Set panel prepare_prev_first to true\n");
+	
 	ret = regulator_bulk_enable(ARRAY_SIZE(icna3512->supplies), icna3512->supplies);
 	if (ret < 0) {
 		dev_err(dev, "regulator enable failed, %d\n", ret);
@@ -237,6 +271,12 @@ static int icna3512_panel_prepare(struct drm_panel *panel)
         goto poweroff;
     }
 
+    // ret = icna3512_panel_bist_test(icna3512->dsi);
+    // if (ret < 0) {
+    //     dev_err(dev, "failed to send BIST command: %d\n", ret);
+    //     goto poweroff;
+    // }
+
     ret = icna3512_panel_on(icna3512);
     if (ret < 0) {
         dev_err(dev, "failed to set panel on: %d\n", ret);
@@ -274,20 +314,21 @@ static int icna3512_panel_enable(struct drm_panel *panel)
 }
 
 static const struct drm_display_mode default_mode = {
-		.clock = 155493,
-		.hdisplay = 1200,
-		.hsync_start = 1200 + 48,
-		.hsync_end = 1200 + 48 + 32,
-		.htotal = 1200 + 48 + 32 + 60,
-		.vdisplay = 1920,
-		.vsync_start = 1920 + 3,
-		.vsync_end = 1920 + 3 + 5,
-		.vtotal = 1920 + 3 + 5 + 6,
-		.flags = 0,
+        .clock		= 150000, // csvke
+
+        .hdisplay	= 1080, // Hadr in datasheet
+        .hsync_start	= 1080 + 156, // HAdr + HFP
+        .hsync_end	= 1080 + 156 + 1, // HAdr + HFP + Hsync
+        .htotal		= 1080 + 156 + 1 + 23, // HAdr + HFP + Hsync + HBP
+
+        .vdisplay	= 1920, // VAdr in datasheet
+        .vsync_start	= 1920 + 20, // Vadr + VFP
+        .vsync_end	= 1920 + 20 + 1, // Vadr + VFP + Vsync
+        .vtotal		= 1920 + 20 + 1 + 15, // Vadr + VFP + Vsync + VBP
+		.flags = 0, // csvke: ??? maybe 0xA03
 };
 
-static int icna3512_panel_get_modes(struct drm_panel *panel,
-			       struct drm_connector *connector)
+static int icna3512_panel_get_modes(struct drm_panel *panel, struct drm_connector *connector)
 {
 	struct drm_display_mode *mode;
 	struct icna3512_panel *icna3512 = to_icna3512_panel(panel);
@@ -305,8 +346,8 @@ static int icna3512_panel_get_modes(struct drm_panel *panel,
 
 	drm_mode_probed_add(connector, mode);
 
-	connector->display_info.width_mm = 95;
-	connector->display_info.height_mm = 151;
+	connector->display_info.width_mm = 87;
+	connector->display_info.height_mm = 155;
 
 	return 1;
 }
@@ -430,12 +471,15 @@ static void icna3512_panel_del(struct icna3512_panel *icna3512)
 static int icna3512_panel_probe(struct mipi_dsi_device *dsi)
 {
 	struct icna3512_panel *icna3512;
+	
 	int ret;
 
 	dsi->lanes = 4;
 	dsi->format = MIPI_DSI_FMT_RGB888;
-	dsi->mode_flags =  MIPI_DSI_MODE_VIDEO_HSE | MIPI_DSI_MODE_VIDEO |
-			   MIPI_DSI_CLOCK_NON_CONTINUOUS;
+	// dsi->mode_flags =  MIPI_DSI_MODE_VIDEO_HSE | MIPI_DSI_MODE_VIDEO |
+	// 		   MIPI_DSI_CLOCK_NON_CONTINUOUS;
+	// dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_VSYNC_FLUSH | MIPI_DSI_CLOCK_NON_CONTINUOUS;
+	dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VSYNC_FLUSH | MIPI_DSI_CLOCK_NON_CONTINUOUS;
 
 	icna3512 = devm_kzalloc(&dsi->dev, sizeof(*icna3512), GFP_KERNEL);
 	if (!icna3512)
