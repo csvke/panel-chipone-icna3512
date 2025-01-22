@@ -365,8 +365,10 @@ static const struct drm_panel_funcs icna3512_panel_funcs = {
 };
 
 static const struct of_device_id icna3512_of_match[] = {
-	{ .compatible = "icna3512,lt070me05000", },
-	{ }
+    {
+        .compatible = "dxq,dxq7d0023",
+    },
+    { /* sentinel */ }
 };
 MODULE_DEVICE_TABLE(of, icna3512_of_match);
 
@@ -474,7 +476,7 @@ static void icna3512_panel_shutdown(struct mipi_dsi_device *dsi)
 
 static struct mipi_dsi_driver icna3512_panel_driver = {
 	.driver = {
-		.name = "panel-icna3512-lt070me05000",
+		.name = "panel-chipone-icna3512",
 		.of_match_table = icna3512_of_match,
 	},
 	.probe = icna3512_panel_probe,
