@@ -4,12 +4,12 @@
 
 /dts-v1/;
 /plugin/;
-/ {
-    compatible = "brcm,bcm2712"; // RPi5 = "brcm,bcm271"
 
+/ {
+    compatible = "brcm,bcm2712"; // RPi5 = "brcm,bcm2712"
 
     fragment@0 {
-        target = <&dsi1>; // csvke: check if the panel is connected to dsi1 (CAM/DISP 1)
+        target = <&dsi1>; 
         __overlay__ {
             status = "okay";
             #address-cells= <1>;
@@ -17,16 +17,19 @@
             port {
                 dsi_out_port: endpoint {
                     remote-endpoint = <&panel_dsi_port>;
-                };
+                }; 
             };
+            
             dxq7d0023: dxq7d0023@0 {
                 compatible = "dxq,dxq7d0023";  //csvke: reference the correct compatible string from panel-chipone-icna3512.c of_device_id icna3512_of_match[]
                 status = "okay";
                 reg = <0>;
                 reset-gpios = <&gpio 16 0>; // csvke: Adjust GPIO pin as needed, // cskve, pin 28 on fpc breakout board on orange dupont wire
+                enable-gpios  = <&gpio 4 0>;    // LCD Enable
+				dcdc-en-gpios = <&gpio 5 0>;    // LCD DC-DC Enable                
                 // backlight = <&backlight>; csvke: WIP: Have not worked out on how to control backlight or if AMOLED control brightness that way
-                // vddi-supply = <&vddi_reg 25 0>; // csvke: reference as VBAT in DXQ7D0023 datasheet, and more info in ICNA3512 datasheet page 13
-                // vci-supply = <&vci_reg 24 1>; // csvke: reference as VDDIO in DXQ7D0023 datasheet, and more info in ICNA3512 datasheet page 13
+                // vddi-supply = <&vddi_reg 24 1>; // csvke: reference as VBAT in DXQ7D0023 datasheet, and more info in ICNA3512 datasheet page 13
+                // vci-supply = <&vci_reg 25 1>; // csvke: reference as VDDIO in DXQ7D0023 datasheet, and more info in ICNA3512 datasheet page 13
                 port {
                     panel_dsi_port: endpoint {
                         remote-endpoint = <&dsi_out_port>;
@@ -42,20 +45,22 @@
             regulators {
                 vddi_reg: vddi {
                     compatible = "regulator-fixed";
-                    regulator-name = "vddi_reg";
-                    regulator-min-microvolt = <1800000>; //csvke: somehow DXQ manufacturer provided HDMI driver board is 3.3v, but the datasheet says 1.8v
+                    regulator-name = "vddi";
+                    regulator-min-microvolt = <0>; //csvke: somehow DXQ manufacturer provided HDMI driver board is 3.3v, but the datasheet says 1.8v
                     regulator-max-microvolt = <1800000>;
+                    regulator-always-on;
                     gpio = <&gpio 24 1>; // csvke: WIP: Adjust GPIO pin as needed
-                    enable-active-high;
+                    // enable-active-high;
                 };
 
                 vci_reg: vci {
                     compatible = "regulator-fixed";
-                    regulator-name = "vci_reg";
-                    regulator-min-microvolt = <3300000>; 
+                    regulator-name = "vci";
+                    regulator-min-microvolt = <0>; 
                     regulator-max-microvolt = <3300000>;
+                    regulator-always-on;
                     gpio = <&gpio 25 1>; // csvke: WIP: Adjust GPIO pin as needed
-                    enable-active-high;
+                    // enable-active-high;
                 };
             };
         };
