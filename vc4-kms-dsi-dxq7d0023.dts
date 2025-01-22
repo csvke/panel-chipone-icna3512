@@ -24,7 +24,7 @@
                 compatible = "dxq,dxq7d0023";  //csvke: reference the correct compatible string from panel-chipone-icna3512.c of_device_id icna3512_of_match[]
                 status = "okay";
                 reg = <0>;
-                reset-gpios = <&gpio 16 0>; // csvke: Adjust GPIO pin as needed, // cskve, pin 28 on fpc breakout board on orange dupont wire
+                reset-gpios = <&gpio 16 1>; // csvke: Adjust GPIO pin as needed, // cskve, pin 28 on fpc breakout board on orange dupont wire
                 enable-gpios  = <&gpio 4 0>;    // LCD Enable
 				dcdc-en-gpios = <&gpio 5 0>;    // LCD DC-DC Enable                
                 // backlight = <&backlight>; csvke: WIP: Have not worked out on how to control backlight or if AMOLED control brightness that way

@@ -97,7 +97,7 @@ static int icna3512_panel_init(struct icna3512_panel *icna3512)
 		return ret;
 	}
 
-	msleep(120);
+	msleep(300);
 
 	ret = mipi_dsi_generic_write(dsi, (u8[]){0xB0, 0x00}, 2);
 	if (ret < 0) {
@@ -215,40 +215,58 @@ static int icna3512_panel_prepare(struct drm_panel *panel)
 		return ret;
 	}
 
-	msleep(20);
-
 	gpiod_set_value_cansleep(icna3512->dcdc_en_gpio, 1);
-	usleep_range(10, 20);
+    usleep_range(10, 20);
 
-	gpiod_set_value_cansleep(icna3512->reset_gpio, 0);
-	usleep_range(10, 20);
+	// Trigger the reset pin according to the datasheet
+    // Set nRESET to low for at least T1 (10ms)
+    dev_info(panel->dev, "Setting reset GPIO low for 10ms (T1)\n");
+    gpiod_set_value(icna3512->reset_gpio, 1);
+    usleep_range(10000, 11000); // Sleep for 10ms
 
-	ret = icna3512_panel_init(icna3512);
-	if (ret < 0) {
-		dev_err(dev, "failed to init panel: %d\n", ret);
-		goto poweroff;
-	}
+    // Set nRESET to high for at least T3 (3ms)
+    dev_info(panel->dev, "Setting reset GPIO high for 3ms (T3)\n");
+    gpiod_set_value(icna3512->reset_gpio, 0);
+    usleep_range(3000, 4000); // Sleep for 3ms
 
-	ret = icna3512_panel_on(icna3512);
-	if (ret < 0) {
-		dev_err(dev, "failed to set panel on: %d\n", ret);
-		goto poweroff;
-	}
+    // Set nRESET to low for at least T4 (7ms)
+    dev_info(panel->dev, "Keeping reset GPIO low for 7ms (T4)\n");
+    gpiod_set_value(icna3512->reset_gpio, 1);
+    usleep_range(7000, 8000); // Sleep for 7ms
 
-	icna3512->prepared = true;
+    // Set nRESET to high
+    dev_info(panel->dev, "Setting reset GPIO high\n");
+    gpiod_set_value(icna3512->reset_gpio, 0);
 
-	return 0;
+    // Set a delay of 15ms (T4)
+    usleep_range(15000, 16000); // Sleep for 15ms
+
+    ret = icna3512_panel_init(icna3512);
+    if (ret < 0) {
+        dev_err(dev, "failed to init panel: %d\n", ret);
+        goto poweroff;
+    }
+
+    ret = icna3512_panel_on(icna3512);
+    if (ret < 0) {
+        dev_err(dev, "failed to set panel on: %d\n", ret);
+        goto poweroff;
+    }
+
+    icna3512->prepared = true;
+
+    return 0;
 
 poweroff:
-	ret = regulator_bulk_disable(ARRAY_SIZE(icna3512->supplies), icna3512->supplies);
-	if (ret < 0)
-		dev_err(dev, "regulator disable failed, %d\n", ret);
+    ret = regulator_bulk_disable(ARRAY_SIZE(icna3512->supplies), icna3512->supplies);
+    if (ret < 0)
+        dev_err(dev, "regulator disable failed, %d\n", ret);
 
-	gpiod_set_value_cansleep(icna3512->reset_gpio, 1);
+    gpiod_set_value_cansleep(icna3512->reset_gpio, 1);
 
-	gpiod_set_value_cansleep(icna3512->dcdc_en_gpio, 0);
+    gpiod_set_value_cansleep(icna3512->dcdc_en_gpio, 0);
 
-	return ret;
+    return ret;
 }
 
 static int icna3512_panel_enable(struct drm_panel *panel)
