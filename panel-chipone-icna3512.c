@@ -23,7 +23,6 @@ struct icna3512_panel {
 
 	struct regulator_bulk_data supplies[ARRAY_SIZE(regulator_names)];
 
-	struct gpio_desc *enable_gpio;
 	struct gpio_desc *reset_gpio;
 	struct gpio_desc *dcdc_en_gpio;
 	struct backlight_device *backlight;
@@ -192,8 +191,6 @@ static int icna3512_panel_unprepare(struct drm_panel *panel)
 	if (ret < 0)
 		dev_err(dev, "regulator disable failed, %d\n", ret);
 
-	gpiod_set_value_cansleep(icna3512->enable_gpio, 0);
-
 	gpiod_set_value_cansleep(icna3512->reset_gpio, 1);
 
 	gpiod_set_value_cansleep(icna3512->dcdc_en_gpio, 0);
@@ -226,9 +223,6 @@ static int icna3512_panel_prepare(struct drm_panel *panel)
 	gpiod_set_value_cansleep(icna3512->reset_gpio, 0);
 	usleep_range(10, 20);
 
-	gpiod_set_value_cansleep(icna3512->enable_gpio, 1);
-	usleep_range(10, 20);
-
 	ret = icna3512_panel_init(icna3512);
 	if (ret < 0) {
 		dev_err(dev, "failed to init panel: %d\n", ret);
@@ -249,8 +243,6 @@ poweroff:
 	ret = regulator_bulk_disable(ARRAY_SIZE(icna3512->supplies), icna3512->supplies);
 	if (ret < 0)
 		dev_err(dev, "regulator disable failed, %d\n", ret);
-
-	gpiod_set_value_cansleep(icna3512->enable_gpio, 0);
 
 	gpiod_set_value_cansleep(icna3512->reset_gpio, 1);
 
@@ -394,12 +386,6 @@ static int icna3512_panel_add(struct icna3512_panel *icna3512)
 	if (ret < 0)
 		return dev_err_probe(dev, ret,
 				     "failed to init regulator, ret=%d\n", ret);
-
-	icna3512->enable_gpio = devm_gpiod_get(dev, "enable", GPIOD_OUT_LOW);
-	if (IS_ERR(icna3512->enable_gpio)) {
-		return dev_err_probe(dev, PTR_ERR(icna3512->enable_gpio),
-				     "cannot get enable-gpio %d\n", ret);
-	}
 
 	icna3512->reset_gpio = devm_gpiod_get(dev, "reset", GPIOD_OUT_HIGH);
 	if (IS_ERR(icna3512->reset_gpio))
