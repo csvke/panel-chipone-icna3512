@@ -44,88 +44,78 @@ static int icna3512_panel_init(struct icna3512_panel *icna3512)
 	struct device *dev = &icna3512->dsi->dev;
 	int ret;
 
-	dsi->mode_flags |= MIPI_DSI_MODE_LPM;
+	dev_info(dev, "Sending initial code\n");
 
-	ret = mipi_dsi_dcs_soft_reset(dsi);
-	if (ret < 0)
-		return ret;
+    // Command 1
+    u8 cmd1[] = {0xA5, 0xA5};
+    ret = mipi_dsi_dcs_write(dsi, 0x9C, cmd1, sizeof(cmd1));
+    if (ret < 0)
+        return ret;
 
-	usleep_range(10000, 20000);
+    // Command 2
+    u8 cmd2[] = {0x5A, 0x5A};
+    ret = mipi_dsi_dcs_write(dsi, 0xFD, cmd2, sizeof(cmd2));
+    if (ret < 0)
+        return ret;
 
-	ret = mipi_dsi_dcs_set_pixel_format(dsi, MIPI_DCS_PIXEL_FMT_24BIT << 4);
-	if (ret < 0) {
-		dev_err(dev, "failed to set pixel format: %d\n", ret);
-		return ret;
-	}
+    // Command 3
+    u8 cmd3[] = {0x03};
+    ret = mipi_dsi_dcs_write(dsi, 0x48, cmd3, sizeof(cmd3));
+    if (ret < 0)
+        return ret;
 
-	ret = mipi_dsi_dcs_set_column_address(dsi, 0, icna3512->mode->hdisplay - 1);
-	if (ret < 0) {
-		dev_err(dev, "failed to set column address: %d\n", ret);
-		return ret;
-	}
+    // Command 4
+    u8 cmd4[] = {0x00};
+    ret = mipi_dsi_dcs_write(dsi, 0x53, cmd4, sizeof(cmd4));
+    if (ret < 0)
+        return ret;
 
-	ret = mipi_dsi_dcs_set_page_address(dsi, 0, icna3512->mode->vdisplay - 1);
-	if (ret < 0) {
-		dev_err(dev, "failed to set page address: %d\n", ret);
-		return ret;
-	}
+    // Command 5
+    u8 cmd5[] = {0x00, 0x00};
+    ret = mipi_dsi_dcs_write(dsi, 0x51, cmd5, sizeof(cmd5));
+    if (ret < 0)
+        return ret;
 
-	/*
-	 * BIT(5) BCTRL = 1 Backlight Control Block On, Brightness registers
-	 *                  are active
-	 * BIT(3) BL = 1    Backlight Control On
-	 * BIT(2) DD = 0    Display Dimming is Off
-	 */
-	ret = mipi_dsi_dcs_write(dsi, MIPI_DCS_WRITE_CONTROL_DISPLAY,
-				 (u8[]){ 0x24 }, 1);
-	if (ret < 0) {
-		dev_err(dev, "failed to write control display: %d\n", ret);
-		return ret;
-	}
+    // Command 6
+    u8 cmd6[] = {0x35};
+    ret = mipi_dsi_dcs_write(dsi, 0x35, cmd6, sizeof(cmd6));
+    if (ret < 0)
+        return ret;
 
-	/* CABC off */
-	ret = mipi_dsi_dcs_write(dsi, MIPI_DCS_WRITE_POWER_SAVE,
-				 (u8[]){ 0x00 }, 1);
-	if (ret < 0) {
-		dev_err(dev, "failed to set cabc off: %d\n", ret);
-		return ret;
-	}
+    // Command 7 - SLP OUT
+    u8 cmd7[] = {0x11};
+    ret = mipi_dsi_dcs_write(dsi, 0x11, cmd7, sizeof(cmd7));
+    if (ret < 0)
+        return ret;
 
-	ret = mipi_dsi_dcs_exit_sleep_mode(dsi);
-	if (ret < 0) {
-		dev_err(dev, "failed to set exit sleep mode: %d\n", ret);
-		return ret;
-	}
+    // Delay 120ms
+    msleep(120);
 
-	msleep(300);
+    // Command 8
+    u8 cmd8[] = {0x0D, 0xBB};
+    ret = mipi_dsi_dcs_write(dsi, 0x51, cmd8, sizeof(cmd8));
+    if (ret < 0)
+        return ret;
 
-	ret = mipi_dsi_generic_write(dsi, (u8[]){0xB0, 0x00}, 2);
-	if (ret < 0) {
-		dev_err(dev, "failed to set mcap: %d\n", ret);
-		return ret;
-	}
+    // Command 9
+    u8 cmd9[] = {0x0F};
+    ret = mipi_dsi_dcs_write(dsi, 0x9F, cmd9, sizeof(cmd9));
+    if (ret < 0)
+        return ret;
 
-	mdelay(10);
+    // Command 10
+    u8 cmd10[] = {0x22};
+    ret = mipi_dsi_dcs_write(dsi, 0xCE, cmd10, sizeof(cmd10));
+    if (ret < 0)
+        return ret;
 
-	/* Interface setting, video mode */
-	ret = mipi_dsi_generic_write(dsi, (u8[])
-				     {0xB3, 0x26, 0x08, 0x00, 0x20, 0x00}, 6);
-	if (ret < 0) {
-		dev_err(dev, "failed to set display interface setting: %d\n"
-			, ret);
-		return ret;
-	}
+    // Command 11 - DISP ON
+    u8 cmd11[] = {0x29};
+    ret = mipi_dsi_dcs_write(dsi, 0x29, cmd11, sizeof(cmd11));
+    if (ret < 0)
+        return ret;
 
-	mdelay(20);
-
-	ret = mipi_dsi_generic_write(dsi, (u8[]){0xB0, 0x03}, 2);
-	if (ret < 0) {
-		dev_err(dev, "failed to set default values for mcap: %d\n"
-			, ret);
-		return ret;
-	}
-
-	return 0;
+    return 0;
 }
 
 static int icna3512_panel_on(struct icna3512_panel *icna3512)
