@@ -89,7 +89,7 @@ static int icna3512_panel_init(struct icna3512_panel *icna3512)
 		return ret;
 	}
 
-    // Command 7 - SLP OUT - rk3288 init cmd appears to be setting sleep out differently
+    // Command 7 - SLP OUT - rk3288 init cmd appears to be setting SLP OUT differently
 	u8 cmd7[] = {0x01, 0x11};
 	ret = mipi_dsi_dcs_write(dsi, 0xFF, cmd7, sizeof(cmd7));
 	if (ret < 0) {
@@ -129,7 +129,7 @@ static int icna3512_panel_init(struct icna3512_panel *icna3512)
 	u8 cmd12[] = {0x01};
 	ret = mipi_dsi_dcs_write(dsi, 0xC5, cmd12, sizeof(cmd12));
 
-    // Command 13 - DISP ON
+    // Command 13 - DISP ON - rk3288 init cmd appears to be setting DISP on differently
     u8 cmd13[] = {0x01, 0x29};
 	ret = mipi_dsi_dcs_write(dsi, 0xFF, cmd13, sizeof(cmd13));
 	if (ret < 0) {
