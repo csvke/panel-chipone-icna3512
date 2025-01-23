@@ -97,7 +97,8 @@ static int icna3512_panel_init(struct icna3512_panel *icna3512)
     msleep(120);
 
     // Command 8 - MIPI_DCS_SET_DISPLAY_BRIGHTNESS (MIPI DCS 1.3)
-    u8 cmd8[] = {0x0D, 0xBB};
+    // u8 cmd8[] = {0x0D, 0xBB}; // LV=800 of 1000, 4.2v power rail @ grey=0.790W, noise=1.143W ~ 1.152W
+	u8 cmd8[] = {0x01, 0xE0};
     ret = mipi_dsi_dcs_write(dsi, 0x51, cmd8, sizeof(cmd8));
     if (ret < 0) {
         return ret;
