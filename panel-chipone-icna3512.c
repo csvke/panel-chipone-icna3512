@@ -46,73 +46,71 @@ static int icna3512_panel_init(struct icna3512_panel *icna3512)
 
     dev_info(dev, "Sending initial code\n");
 
-    // Command 1
+    // Command 1 - Vendor Specific?
     u8 cmd1[] = {0xA5, 0xA5};
     ret = mipi_dsi_dcs_write(dsi, 0x9C, cmd1, sizeof(cmd1));
     if (ret < 0) {
         return ret;
     }
 
-    // Command 2
+    // Command 2 - Vendor Specific?
     u8 cmd2[] = {0x5A, 0x5A};
     ret = mipi_dsi_dcs_write(dsi, 0xFD, cmd2, sizeof(cmd2));
     if (ret < 0) {
         return ret;
     }
 
-    // Command 3
+    // Command 3 - Vendor Specific?
     u8 cmd3[] = {0x03};
     ret = mipi_dsi_dcs_write(dsi, 0x48, cmd3, sizeof(cmd3));
     if (ret < 0) {
         return ret;
     }
 
-    // Command 4
+    // Command 4 - Vendor Specific?
     u8 cmd4[] = {0xE0};
     ret = mipi_dsi_dcs_write(dsi, 0x53, cmd4, sizeof(cmd4));
     if (ret < 0) {
         return ret;
     }
 
-    // Command 5
+    // Command 5 - Vendor Specific?
     u8 cmd5[] = {0x00, 0x00};
     ret = mipi_dsi_dcs_write(dsi, 0x51, cmd5, sizeof(cmd5));
     if (ret < 0) {
         return ret;
     }
 
-    // Command 6
-    u8 cmd6[] = {0x35};
-    ret = mipi_dsi_dcs_write(dsi, 0x35, cmd6, sizeof(cmd6));
-    if (ret < 0) {
-        return ret;
-    }
+    // Command 6 - MIPI_DCS_SET_TEAR_ON
+	ret = mipi_dsi_dcs_write(dsi, 0x35, NULL, 0);
+	if (ret < 0) {
+		return ret;
+	}
 
     // Command 7 - SLP OUT
-    u8 cmd7[] = {0x11};
-    ret = mipi_dsi_dcs_write(dsi, 0x11, cmd7, sizeof(cmd7));
-    if (ret < 0) {
-        return ret;
-    }
+	ret = mipi_dsi_dcs_write(dsi, 0x11, NULL, 0);
+	if (ret < 0) {
+		return ret;
+	}
 
     // Delay 120ms
     msleep(120);
 
-    // Command 8
+    // Command 8 - MIPI_DCS_SET_DISPLAY_BRIGHTNESS (MIPI DCS 1.3)
     u8 cmd8[] = {0x0D, 0xBB};
     ret = mipi_dsi_dcs_write(dsi, 0x51, cmd8, sizeof(cmd8));
     if (ret < 0) {
         return ret;
     }
 
-    // Command 9
+    // Command 9 - Vendor Specific?
     u8 cmd9[] = {0x0F};
     ret = mipi_dsi_dcs_write(dsi, 0x9F, cmd9, sizeof(cmd9));
     if (ret < 0) {
         return ret;
     }
 
-    // Command 10
+    // Command 10 - Vendor Specific?
     u8 cmd10[] = {0x22};
     ret = mipi_dsi_dcs_write(dsi, 0xCE, cmd10, sizeof(cmd10));
     if (ret < 0) {
@@ -120,11 +118,10 @@ static int icna3512_panel_init(struct icna3512_panel *icna3512)
     }
 
     // Command 11 - DISP ON
-    u8 cmd11[] = {0x29};
-    ret = mipi_dsi_dcs_write(dsi, 0x29, cmd11, sizeof(cmd11));
-    if (ret < 0) {
-        return ret;
-    }
+    ret = mipi_dsi_dcs_write(dsi, 0x29, NULL, 0);
+	if (ret < 0) {
+		return ret;
+	}
 
     dev_info(dev, "initial code sent\n");
 
