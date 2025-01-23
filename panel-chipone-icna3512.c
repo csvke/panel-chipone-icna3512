@@ -68,7 +68,7 @@ static int icna3512_panel_init(struct icna3512_panel *icna3512)
     }
 
     // Command 4
-    u8 cmd4[] = {0x00};
+    u8 cmd4[] = {0xE0};
     ret = mipi_dsi_dcs_write(dsi, 0x53, cmd4, sizeof(cmd4));
     if (ret < 0) {
         return ret;
@@ -125,6 +125,8 @@ static int icna3512_panel_init(struct icna3512_panel *icna3512)
     if (ret < 0) {
         return ret;
     }
+
+    dev_info(dev, "initial code sent\n");
 
     return 0;
 }
@@ -229,9 +231,9 @@ static int icna3512_panel_prepare(struct drm_panel *panel)
 	if (icna3512->prepared)
 		return 0;
 
-    // csvke: Set the prepare_prev_first flag to ensure DSI interface is in LP-11 mode, https://forums.raspberrypi.com/viewtopic.php?p=2276942&hilit=LP+11#p2276316
-    icna3512->base.prepare_prev_first = true;
-    dev_info(dev, "Set panel prepare_prev_first to true\n");
+    // // csvke: Set the prepare_prev_first flag to ensure DSI interface is in LP-11 mode, https://forums.raspberrypi.com/viewtopic.php?p=2276942&hilit=LP+11#p2276316
+    // icna3512->base.prepare_prev_first = true;
+    // dev_info(dev, "Set panel prepare_prev_first to true\n");
 	
 	ret = regulator_bulk_enable(ARRAY_SIZE(icna3512->supplies), icna3512->supplies);
 	if (ret < 0) {
@@ -314,7 +316,7 @@ static int icna3512_panel_enable(struct drm_panel *panel)
 }
 
 static const struct drm_display_mode default_mode = {
-        .clock		= 150000, // csvke
+        .clock		= 147802, // csvke
 
         .hdisplay	= 1080, // Hadr in datasheet
         .hsync_start	= 1080 + 156, // HAdr + HFP
@@ -479,7 +481,8 @@ static int icna3512_panel_probe(struct mipi_dsi_device *dsi)
 	// dsi->mode_flags =  MIPI_DSI_MODE_VIDEO_HSE | MIPI_DSI_MODE_VIDEO |
 	// 		   MIPI_DSI_CLOCK_NON_CONTINUOUS;
 	// dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_VSYNC_FLUSH | MIPI_DSI_CLOCK_NON_CONTINUOUS;
-	dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VSYNC_FLUSH | MIPI_DSI_CLOCK_NON_CONTINUOUS;
+	dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_NO_EOT_PACKET | MIPI_DSI_CLOCK_NON_CONTINUOUS;
+	// dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VSYNC_FLUSH | MIPI_DSI_CLOCK_NON_CONTINUOUS;
 
 	icna3512 = devm_kzalloc(&dsi->dev, sizeof(*icna3512), GFP_KERNEL);
 	if (!icna3512)
