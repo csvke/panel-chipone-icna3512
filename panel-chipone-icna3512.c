@@ -304,7 +304,7 @@ poweroff:
 static int icna3512_panel_enable(struct drm_panel *panel)
 {
 	struct icna3512_panel *icna3512 = to_icna3512_panel(panel);
-
+	
 	if (icna3512->enabled)
 		return 0;
 
@@ -316,7 +316,7 @@ static int icna3512_panel_enable(struct drm_panel *panel)
 }
 
 static const struct drm_display_mode default_mode = {
-        .clock		= 147802, // csvke
+        .clock		= 150000, // csvke
 
         .hdisplay	= 1080, // Hadr in datasheet
         .hsync_start	= 1080 + 156, // HAdr + HFP
@@ -473,7 +473,6 @@ static void icna3512_panel_del(struct icna3512_panel *icna3512)
 static int icna3512_panel_probe(struct mipi_dsi_device *dsi)
 {
 	struct icna3512_panel *icna3512;
-	
 	int ret;
 
 	dsi->lanes = 4;
@@ -481,8 +480,8 @@ static int icna3512_panel_probe(struct mipi_dsi_device *dsi)
 	// dsi->mode_flags =  MIPI_DSI_MODE_VIDEO_HSE | MIPI_DSI_MODE_VIDEO |
 	// 		   MIPI_DSI_CLOCK_NON_CONTINUOUS;
 	// dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_VSYNC_FLUSH | MIPI_DSI_CLOCK_NON_CONTINUOUS;
-	dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_NO_EOT_PACKET | MIPI_DSI_CLOCK_NON_CONTINUOUS;
-	// dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VSYNC_FLUSH | MIPI_DSI_CLOCK_NON_CONTINUOUS;
+	// dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_NO_EOT_PACKET | MIPI_DSI_CLOCK_NON_CONTINUOUS;
+	dsi->mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_CLOCK_NON_CONTINUOUS | MIPI_DSI_MODE_LPM;
 
 	icna3512 = devm_kzalloc(&dsi->dev, sizeof(*icna3512), GFP_KERNEL);
 	if (!icna3512)
