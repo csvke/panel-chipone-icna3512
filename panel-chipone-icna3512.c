@@ -80,6 +80,7 @@ static int icna3512_panel_init(struct icna3512_panel *icna3512)
     if (ret < 0) {
         return ret;
     }
+	/***********************************************************************/
 
     // Command 6 - MIPI_DCS_SET_TEAR_ON - rk3288 init cmd appears to be setting tearing off? (15 00 02 35 00 vs 05 00 01 35)
 	u8 cmd6[] = {0x00};
@@ -120,16 +121,17 @@ static int icna3512_panel_init(struct icna3512_panel *icna3512)
         return ret;
     }
 
-	// Command 11 - not seed from given by vendor
+	// Command 11 - not seen from given by vendor
 	u8 cmd11[] = {0x01};
 	ret = mipi_dsi_dcs_write(dsi, 0x9F, cmd11, sizeof(cmd11));
 
-	// Command 12 - not seed from given by vendor
+	// Command 12 - not seen from given by vendor
 	u8 cmd12[] = {0x01};
 	ret = mipi_dsi_dcs_write(dsi, 0xC5, cmd12, sizeof(cmd12));
 
     // Command 13 - DISP ON
-    ret = mipi_dsi_dcs_write(dsi, 0x29, NULL, 0);
+    u8 cmd13[] = {0x01, 0x29};
+	ret = mipi_dsi_dcs_write(dsi, 0xFF, cmd13, sizeof(cmd13));
 	if (ret < 0) {
 		return ret;
 	}
