@@ -69,22 +69,19 @@
     };
 
     fragment@2 {
-        target = <&i2c4>; // csvke: the target is the I2C bus that the touch controller is connected to, see: https://github.com/raspberrypi/linux/blob/rpi-6.6.y/arch/arm64/boot/dts/broadcom/bcm2712-rpi-5-b.dts#L261
+        target = <&i2c5>; // csvke: the target is the I2C bus that the touch controller is connected to, see: https://github.com/raspberrypi/linux/blob/rpi-6.6.y/arch/arm64/boot/dts/broadcom/bcm2712-rpi-5-b.dts#L261
         __overlay__ {
             status = "okay";
             #address-cells = <1>;
             #size-cells = <0>;
 
             ft3519t: ft3519t@70 {
-                #address-cells = <1>;
-				#size-cells = <0>;
-                compatible = "edt,edt-ft5x06"; // csvke: pretend that the touch controller is edt_tf5506 as that's the only one that support 10-point touch
-                reg = <0x38>; // csvke: p.8 of FT3519T data sheet, I2C address of the FT3519T controller
+                compatible = "edt,edt-ft5506"; // csvke: pretend that the touch controller is edt_tf5506 as that's the only one that support 10-point touch
+                reg = <0x70>; // csvke: p.8 of FT3519T data sheet, I2C address of the FT3519T controller
                 interrupt-parent = <&gpio>;
-                interrupts = <24 0x02>; // csvke: not sure about the type of interrupt, but it is the GPIO pin number. 0x01 for IRQ_TYPE_EDGE_RISING; 0x02 for IRQ_TYPE_EDGE_FALLING; 0x03 for IRQ_TYPE_EDGE_BOTH
-                reset-gpios = <&gpio 23 1>; // csvke: Brown jumper wire
-                wake-gpios = <&gpio 24 1>; // csvke: try to see if wake == irq
-                irq-gpios = <&gpio 24 1>; // csvke: Purple jumper wire
+                interrupts = <6 2>; // csvke: not sure about the type of interrupt, but it is the GPIO pin number
+                reset-gpios = <&gpio 5 0>; // csvke: Brown jumper wire
+                irq-gpios = <&gpio 6 0>; // csvke: Purple jumper wire
                 touchscreen-size-x = <1080>; // csvke: 1080x1920
                 touchscreen-size-y = <1920>;
             };
