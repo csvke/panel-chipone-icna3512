@@ -71,22 +71,22 @@
     fragment@1 {
         target = <&i2c4>;
         __overlay__ {
-            status = "okay";
             #address-cells = <1>;
-            #size-cells = <0>;         
+            #size-cells = <0>; 
+            status = "okay";        
             touchpanel: edt-ft5x06@38 {
-				compatible = "edt,edt-ft5406";
+                compatible = "edt,edt-ft5506";
 				status = "okay";
 				reg = <0x38>;
-                // vcc-supply = <&reg_vcc>;
-                // iovcc-supply = <&reg_iovcc>;
+                // // vcc-supply = <&reg_vcc>;
+                // // iovcc-supply = <&reg_iovcc>;
                 interrupt-parent = <&gpio>;
-                interrupts = <24 0x02>; // csvke: not sure about the type of interrupt, but it is the GPIO pin number. 0x01 for IRQ_TYPE_EDGE_RISING; 0x02 for IRQ_TYPE_EDGE_FALLING; 0x03 for IRQ_TYPE_EDGE_BOTH
-                reset-gpios = <&gpio 23 1>; // csvke: Brown jumper wire
-                wake-gpios = <&gpio 24 1>; // csvke: try to see if wake == irq
-                irq-gpios = <&gpio 24 1>; // csvke: Purple jumper wire
-                touchscreen-size-x = <1080>; // csvke: 1080x1920
-                touchscreen-size-y = <1920>;
+                interrupts = <6 0x02>; // csvke: not sure about the type of interrupt, but it is the GPIO pin number. 0x01 for IRQ_TYPE_EDGE_RISING; 0x02 for IRQ_TYPE_EDGE_FALLING; 0x03 for IRQ_TYPE_EDGE_BOTH
+                reset-gpios = <&gpio 5 1>; // csvke: Brown jumper wire
+                wake-gpios = <&gpio 6 1>; // csvke: try to see if wake == irq
+                irq-gpios = <&gpio 6 1>; // csvke: Purple jumper wire
+                touchscreen-size-x = < 800 >; // csvke: 1080x1920
+                touchscreen-size-y = < 480 >;
 			};
         };
     };
