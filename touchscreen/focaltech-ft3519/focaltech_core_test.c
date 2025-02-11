@@ -154,7 +154,7 @@ static const struct i2c_device_id fts_ts_id[] = {
 MODULE_DEVICE_TABLE(i2c, fts_ts_id);
 
 static const struct of_device_id fts_dt_match[] = {
-    {.compatible = "focaltech,fts", },
+    {.compatible = "focaltech,test", },
     {},
 };
 MODULE_DEVICE_TABLE(of, fts_dt_match);

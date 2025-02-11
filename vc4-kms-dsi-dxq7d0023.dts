@@ -1,8 +1,6 @@
-// csvke: compile and install commands
-// dtc -@ -I dts -O dtb -o vc4-kms-dsi-dxq7d0023.dtbo vc4-kms-dsi-dxq7d0023.dts
-// sudo cp vc4-kms-dsi-dxq7d0023.dtbo /boot/firmware/overlays/
-
 // csvke: reference the correct I2C node from the device tree of your raspberry pi, for example in Raspberry Pi 5, it is i2c6 for MIPI0 and i2c5 for MIPI1, https://github.com/raspberrypi/linux/blob/rpi-6.6.y/arch/arm64/boot/dts/broadcom/bcm2712-rpi-5-b.dts#L261
+// compile: dtc -I dts -O dtb -o vc4-kms-dsi-dxq7d0023.dtbo vc4-kms-dsi-dxq7d0023.dts
+// copy dtbo to overlays: sudo cp vc4-kms-dsi-dxq7d0023.dtbo /boot/overlays/
 
 /dts-v1/;
 /plugin/;
@@ -28,10 +26,10 @@
                 reg = <0>;
                 reset-gpios = <&gpio 16 1>; // csvke: Adjust GPIO pin as needed, // cskve, pin 28 on fpc breakout board on orange dupont wire
                 enable-gpios  = <&gpio 4 0>;    // LCD Enable
-				dcdc-en-gpios = <&gpio 5 0>;    // LCD DC-DC Enable                
+                dcdc-en-gpios = <&gpio 5 0>;    // LCD DC-DC Enable                
                 // backlight = <&backlight>; csvke: WIP: Have not worked out on how to control backlight or if AMOLED control brightness that way
-                // vddi-supply = <&vddi_reg 24 1>; // csvke: reference as VBAT in DXQ7D0023 datasheet, and more info in ICNA3512 datasheet page 13
-                // vci-supply = <&vci_reg 25 1>; // csvke: reference as VDDIO in DXQ7D0023 datasheet, and more info in ICNA3512 datasheet page 13
+                // vddi-supply = <&regulator_vdd_panel>; // csvke: reference as VBAT in DXQ7D0023 datasheet, and more info in ICNA3512 datasheet page 13
+                // vci-supply = <&regulator_vcc_panel>; // csvke: reference as VDDIO in DXQ7D0023 datasheet, and more info in ICNA3512 datasheet page 13
                 port {
                     panel_dsi_port: endpoint {
                         remote-endpoint = <&dsi_out_port>;
@@ -41,48 +39,108 @@
         };
     };
 
-    // fragment@1 {
-    //     target-path = "/";
-    //     __overlay__ {
-    //         regulators {
-    //             // vddi_reg: vddi {
-    //             //     compatible = "regulator-fixed";
-    //             //     regulator-name = "vddi";
-    //             //     regulator-min-microvolt = <0>; //csvke: somehow DXQ manufacturer provided HDMI driver board is 3.3v, but the datasheet says 1.8v
-    //             //     regulator-max-microvolt = <1800000>;
-    //             //     regulator-always-on;
-    //             //     gpio = <&gpio 24 1>; // csvke: WIP: Adjust GPIO pin as needed
-    //             //     // enable-active-high;
-    //             // };
-
-    //             vci_reg: vci {
-    //                 compatible = "regulator-fixed";
-    //                 regulator-name = "vci";
-    //                 regulator-min-microvolt = <0>; 
-    //                 regulator-max-microvolt = <3300000>;
-    //                 regulator-always-on;
-    //                 gpio = <&gpio 25 1>; // csvke: WIP: Adjust GPIO pin as needed
-    //                 // enable-active-high;
-    //             };
-    //         };
-    //     };
-    // };
-
+    /* This is for the drive being developed */
     fragment@1 {
-        target = <&i2c4>; // Adjust this to the correct I2C bus
+        target = <&i2c4>;
         __overlay__ {
             #address-cells = <1>;
             #size-cells = <0>;
             status = "okay";
+            clock-frequency = <400000>;
 
             ft3519: ft3519@38 {
                 compatible = "focaltech,fts";
                 reg = <0x38>;
+                defer-probe;
                 interrupt-parent = <&gpio>;
-                interrupts = <24 2>; // GPIO6, falling edge
-                reset-gpios = <&gpio 23 0>; // csvke: trying between 1 and 0x0, referencing /android_kernel_motorola_mt6853/arch/arm64/boot/dts/mediatek/cust_mt6768_corfu_touch_1080x2400.dtsi
-                irq-gpios = <&gpio 24 0>; // GPIO6
+                interrupts = <24 0x02>; /* GPIO24, falling edge */
+                focaltech,display-coords = <0 0 1080 1920>;
+                // focaltech,have-key = <0>; // WIP: Have not worked out what it does
+                focaltech,reset-gpio = <&gpio 23 0x01>; /* GPIO23 for reset */
+                focaltech,irq-gpio = <&gpio 24 0x02>;   /* GPIO24 for interrupt */
+                // focaltech,key-number = <3>;  /* Optional: Number of virtual keys */
+                // focaltech,keys = <KEY_VOLUMEUP KEY_VOLUMEDOWN KEY_HOME>; /* Example keys */
+                // focaltech,key-x-coords = <100 200 300>; /* Example X coordinates */
+                // focaltech,key-y-coords = <1800 1800 1800>; /* Example Y coordinates */
+                // focaltech,dvdd-gpio = <&gpio 25 0>;  /* GPIO25 for DVDD */
+                focaltech,max-touch-number = <10>;
+                // vdd-supply = <&regulator_vdd_touch>;
+                // vcc_i2c-supply = <&regulator_vcc_i2c_touch>;
                 status = "okay";
+            };
+        };
+    };
+
+    // /* This is for the dummy driver */
+    // fragment@1 {
+    //     target = <&i2c4>; // Adjust this to the correct I2C bus
+    //     __overlay__ {
+    //         #address-cells = <1>;
+    //         #size-cells = <0>;
+    //         status = "okay";
+    //         ft3519: ft3519@38 {
+    //             compatible = "focaltech,test"; // csvke: this is a test driver
+    //             reg = <0x38>;
+    //             /* Focaltech GPIO Configuration */
+    //             interrupt-parent = <&gpio>;
+    //             interrupts = <24 2>; // GPIO24, falling edge
+    //             focaltech,display-coords =  <0 0 1080 1920>;
+    //             focaltech,have-key = <0>; // WIP: Have not worked out what it does
+    //             reset-gpio = <&gpio 23 0>; // GPIO23 for reset
+    //             irq-gpio = <&gpio 24 0>; // GPIO24 for interrupt
+    //             focaltech,max-touch-number = <10>;
+    //             vdd-supply = <&regulator_vdd_touch>; // Regulator for VDD
+    //             vcc_i2c-supply = <&regulator_vcc_i2c_touch>; // Regulator for VCC_I2C
+    //             // focaltech,tp_rst_high;
+    //             status = "okay";
+    //         };
+    //     };
+    // };
+
+    fragment@2 {
+        target-path = "/";
+        __overlay__ {
+            regulator_vdd_touch: regulator-vdd-touch {
+                compatible = "regulator-fixed";
+                regulator-name = "vdd_touch";
+                regulator-min-microvolt = <3300000>;
+                regulator-max-microvolt = <3300000>;
+                gpio = <&gpio 25 0>;
+                enable-active-high;
+            };
+
+            regulator_vcc_i2c_touch: regulator-vcc-i2c-touch {
+                compatible = "regulator-fixed";
+                regulator-name = "vcc_i2c_touch";
+                regulator-min-microvolt = <1800000>;
+                regulator-max-microvolt = <1800000>;
+                gpio = <&gpio 26 0>;
+                enable-active-high;
+            };
+        };
+    };
+
+    // Add panel regulators here if needed
+    fragment@3 {
+        target-path = "/";
+        __overlay__ {
+            // Example panel regulator definitions
+            regulator_vdd_panel: regulator-vdd-panel {
+                compatible = "regulator-fixed";
+                regulator-name = "vdd_panel";
+                regulator-min-microvolt = <3300000>;
+                regulator-max-microvolt = <3300000>;
+                gpio = <&gpio 8 0>;
+                enable-active-high;
+            };
+
+            regulator_vcc_panel: regulator-vcc-panel {
+                compatible = "regulator-fixed";
+                regulator-name = "vcc_panel";
+                regulator-min-microvolt = <1800000>;
+                regulator-max-microvolt = <1800000>;
+                gpio = <&gpio 9 0>;
+                enable-active-high;
             };
         };
     };
